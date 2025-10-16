@@ -20,13 +20,13 @@ def main():
     except KeyError:
         out = Path(os.environ["out"])
 
-    check_dist: bool
+    check_dist
     try:
         check_dist = not bool(os.environ["dontUsePyprojectInstallDistCheck"])
     except KeyError:
         check_dist = True
 
-    dists: list[Path] = list(dist.iterdir())
+    dists = list(dist.iterdir())
 
     # Verify that wheel is not containing store path
     if check_dist:

@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from os.path import join as pjoin
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Union
 
 from make_venv import (  # pyright: ignore[reportImplicitRelativeImport]
     FileCollisionError,
@@ -27,7 +26,7 @@ class Symlink:
 FileTree = Union[File, Symlink, dict[str, "FileTree"]]
 
 
-def write_tree(out: Path, tree: FileTree):
+def write_tree(out, tree):
     if isinstance(tree, File):
         with out.open(mode="w") as fd:
             fd.write(tree.contents)
@@ -42,7 +41,7 @@ def write_tree(out: Path, tree: FileTree):
             write_tree(out.joinpath(filename), node)
 
 
-def TemporaryTree(tree: FileTree) -> TemporaryDirectory[str]:
+def TemporaryTree(tree):
     dir = TemporaryDirectory()
     write_tree(Path(dir.name), tree)
     return dir
@@ -83,7 +82,7 @@ class TestComparePaths(unittest.TestCase):
 class TestMergeInputs(unittest.TestCase):
     def test_eq(self):
         """Test equal files"""
-        tree: FileTree = {"hello.py": File("hello")}
+        tree = {"hello.py": File("hello")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree)
@@ -113,7 +112,7 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_eq_nested(self):
         """Test equal files in a nested directory"""
-        tree: FileTree = {
+        tree = {
             "nested_dir": {
                 "hello.py": File("hello"),
             },
@@ -137,7 +136,7 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_eq_sym(self):
         """Test symlinks pointing to the same location"""
-        tree: FileTree = {"hello.py": Symlink("goodbye.py")}
+        tree = {"hello.py": Symlink("goodbye.py")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree)
@@ -203,7 +202,7 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_skip(self):
         """Test skipping files"""
-        tree: FileTree = {"hello.py": File("hello")}
+        tree = {"hello.py": File("hello")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree)
@@ -221,7 +220,7 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_skip_wildcard(self):
         """Test skipping files"""
-        tree: FileTree = {"hello.py": File("hello")}
+        tree = {"hello.py": File("hello")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree)
@@ -239,8 +238,8 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_ignore_collisions(self):
         """Test ignoring collisions"""
-        tree_a: FileTree = {"hello.py": File("hello")}
-        tree_b: FileTree = {"hello.py": File("goodbye")}
+        tree_a = {"hello.py": File("hello")}
+        tree_b = {"hello.py": File("goodbye")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree_a)
@@ -258,8 +257,8 @@ class TestMergeInputs(unittest.TestCase):
 
     def test_ignore_collisions_wildcard(self):
         """Test ignoring collisions using glob pattern"""
-        tree_a: FileTree = {"hello.py": File("hello")}
-        tree_b: FileTree = {"hello.py": File("goodbye")}
+        tree_a = {"hello.py": File("hello")}
+        tree_b = {"hello.py": File("goodbye")}
 
         with contextlib.ExitStack() as stack:
             a = TemporaryTree(tree_a)

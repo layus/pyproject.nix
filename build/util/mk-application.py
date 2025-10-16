@@ -2,13 +2,9 @@
 import argparse
 from pathlib import Path
 from stat import S_ISDIR, S_ISLNK, S_ISREG
-from typing import Union
 
 
 class ArgsNS(argparse.Namespace):
-    venv: str
-    base: str
-    out: str
 
     def __init__(self):
         self.venv = ""
@@ -36,7 +32,7 @@ SKIP_PATTERNS = (
 )
 
 
-def do_skip(stack: tuple[str, ...]) -> bool:
+def do_skip(stack):
     """Check if a stack matches a skip pattern"""
     for pattern in SKIP_PATTERNS:
         if len(stack) != len(pattern):
@@ -53,14 +49,14 @@ def do_skip(stack: tuple[str, ...]) -> bool:
     return False
 
 
-def get_structure(root: Path) -> DirectoryStructure:
+def get_structure(root):
     """Get structure from package"""
 
-    def recurse(stack: tuple[str, ...], root: Path) -> DirectoryStructure:
+    def recurse(stack, root):
         st_mode = root.lstat().st_mode
 
         if S_ISDIR(st_mode):
-            ret: DirectoryStructure = {}
+            ret = {}
 
             for child in root.iterdir():
                 # Check if the current tree position is a skipped node
@@ -94,13 +90,13 @@ def get_structure(root: Path) -> DirectoryStructure:
 
 
 def write_structure(
-    structure: DirectoryStructure,
-    venv: Path,
-    out: Path,
+    structure,
+    venv,
+    out,
 ):
     """Write out directory structure"""
 
-    def recurse(ds: DirectoryStructure, stack: tuple[str, ...]):
+    def recurse(ds, stack):
         dst = out.joinpath(*stack)
         if isinstance(ds, dict):
             dst.mkdir()

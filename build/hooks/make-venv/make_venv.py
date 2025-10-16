@@ -9,22 +9,13 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 from stat import S_ISDIR, S_ISLNK, S_ISREG
-from typing import Optional, Union
 from venv import EnvBuilder
-
-MergedInputs = Union[Path, None, dict[str, "MergedInputs"]]
 
 
 EXECUTABLE = os.path.basename(sys.executable)
 
 
 class ArgsNS(argparse.Namespace):
-    out: str
-    python: str
-    deps: list[str]
-    env: list[str]
-    skip: list[str]
-    ignore_collisions: list[str]
 
     def __init__(self):
         self.out = ""
@@ -50,7 +41,7 @@ arg_parser.add_argument(
 
 
 class FileCollisionError(Exception):
-    def __init__(self, inputs: list[Path]):
+    def __init__(self, inputs):
         err = f"""Two or more packages are trying to provide the same file with different contents
 
         Files: {" ".join((str(x) for x in inputs))}
@@ -64,7 +55,7 @@ class FileMergeError(Exception):
     pass
 
 
-def compare_paths(paths: list[Path]) -> bool:
+def compare_paths(paths):
     if len(paths) < 2:
         return True
 
@@ -81,7 +72,7 @@ def compare_paths(paths: list[Path]) -> bool:
                 return True
 
 
-def is_bytecode(path: Path) -> bool:
+def is_bytecode(path):
     # Bytecode files contain fully resolved file names, meaning that the byte code will always collide
     # even if the original sources are identical.
     # We can safely ignore collisions for bytecode because we check the original sources for equality.
@@ -89,15 +80,15 @@ def is_bytecode(path: Path) -> bool:
 
 
 @lru_cache()
-def lstat(path: Path):
+def lstat(path):
     return path.lstat()
 
 
 def merge_inputs(
-    inputs: list[Path],
-    skip_paths: Optional[list[str]] = None,
-    ignore_collisions: Optional[list[str]] = None,
-) -> MergedInputs:
+    inputs,
+    skip_paths = None,
+    ignore_collisions = None,
+):
     """
     Merge multiple store paths
     """
@@ -105,7 +96,7 @@ def merge_inputs(
     skip_paths = skip_paths or []
     ignore_collisions = ignore_collisions or []
 
-    def recurse(inputs: list[Path], stack: tuple[str, ...]) -> MergedInputs:
+    def recurse(inputs, stack):
         path_rel = "/".join(stack)
 
         # Check for skipped path
@@ -119,7 +110,7 @@ def merge_inputs(
             return inputs[0]
 
         if any(S_ISDIR(lstat(input).st_mode) for input in inputs):  # Directories
-            entries: dict[str, list[Path]] = {}
+            entries = {}
 
             for input in inputs:
                 for child in input.iterdir():
@@ -175,7 +166,7 @@ def merge_inputs(
     return recurse(inputs, ())
 
 
-def write_regular(src: Path, dst: Path):
+def write_regular(src, dst):
     if S_ISLNK(lstat(src).st_mode):
         shutil.copy(src, dst, follow_symlinks=False)
     else:
@@ -183,10 +174,10 @@ def write_regular(src: Path, dst: Path):
 
 
 def write_bin(
-    python_bin: Path,
-    out_bin: Path,
-    src: Path,
-    dst: Path,
+    python_bin,
+    out_bin,
+    src,
+    dst,
 ):
     python_shebang = b"#!" + bytes(python_bin)
     out_shebang = b"#!" + bytes(out_bin)
@@ -213,13 +204,13 @@ def write_bin(
 
 
 def write_venv_deps(
-    python_bin: Path,
-    out_root: Path,
-    inputs: MergedInputs,
+    python_bin,
+    out_root,
+    inputs,
 ):
     out_bin = out_root.joinpath("bin")
 
-    def recurse(root: Path, inputs: MergedInputs):
+    def recurse(root, inputs):
         if inputs is None:
             return
 
@@ -247,7 +238,7 @@ def write_venv_deps(
     recurse(out_root, inputs)
 
 
-def fixup_pyvenv(python_root: Path, out_root: Path) -> None:
+def fixup_pyvenv(python_root, out_root):
     # The venv module writes a command line to pyvenv.cfg using sys.executable
     # This means that the output would contain a reference to build Python
     with open(out_root.joinpath("pyvenv.cfg"), "r") as pyvenv_f:
@@ -263,7 +254,7 @@ def fixup_pyvenv(python_root: Path, out_root: Path) -> None:
         pyvenv_f.write(pyvenv)
 
 
-def wrap_python_bin(bin: Path, target: Path):
+def wrap_python_bin(bin, target):
     # Replace symlinks to Python binaries in venv with wrappers
     # So a symlink pointing to the venv will still work.
     #
@@ -293,7 +284,7 @@ def wrap_python_bin(bin: Path, target: Path):
     )
 
 
-def wrap_python(python_root: Path, out_root: Path):
+def wrap_python(python_root, out_root):
     for bin in out_root.joinpath("bin").iterdir():
         st_mode = lstat(bin).st_mode
         if not S_ISLNK(st_mode):
@@ -312,8 +303,8 @@ def main():
     python_root = Path(args.python)
     python_bin = python_root.joinpath("bin")
 
-    dependencies: list[Path] = []  # List of dependency roots
-    seen_roots: set[str] = set()  # Keep track of unique dependency roots
+    dependencies = []  # List of dependency roots
+    seen_roots = set()  # Keep track of unique dependency roots
 
     # Populate dependencies from precisely passed options
     for dep_roots in args.deps or []:

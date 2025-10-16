@@ -3,7 +3,6 @@ import os
 import os.path
 import sys
 from pathlib import Path
-from typing import Optional
 
 
 def main():
@@ -23,7 +22,7 @@ def main():
         return
 
     for bin in bin_dir.iterdir():
-        script: Optional[bytes] = None
+        script = None
 
         with bin.open(mode="rb") as fd:
             preamble = fd.read(len(cross_shebang))

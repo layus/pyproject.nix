@@ -6,7 +6,6 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, Union, cast
 
 # Backwards compat with old Python for sandbox builds.
 if sys.version_info >= (3, 11):
@@ -20,9 +19,7 @@ class BuildError(Exception):
 
 
 class ArgsNS(argparse.Namespace):
-    python: str  # pyright: ignore[reportUninitializedInstanceVariable]
-    dist: str  # pyright: ignore[reportUninitializedInstanceVariable]
-    verbose: str  # pyright: ignore[reportUninitializedInstanceVariable]
+    pass
 
 
 arg_parser = argparse.ArgumentParser(description="Build editables according PEP-660")
@@ -40,7 +37,7 @@ arg_parser.add_argument("-v", "--verbose", action="store_true")
 
 
 @contextmanager
-def dist_dir(arg: Union[str, None]) -> Generator[Path]:
+def dist_dir(arg):
     """Return a uniform looking context manager for dist path"""
     if arg is None:
         tmp_dir = tempfile.TemporaryDirectory()
@@ -62,11 +59,11 @@ def main():
     cwd = Path.cwd()
 
     with open(cwd.joinpath("pyproject.toml"), "rb") as pyproject_file:
-        pyproject: dict[str, Any] = tomllib.load(pyproject_file)  # pyright: ignore[reportUnknownMemberType,reportExplicitAny,reportUnknownVariableType]
+        pyproject = tomllib.load(pyproject_file)  # pyright: ignore[reportUnknownMemberType,reportExplicitAny,reportUnknownVariableType]
 
     # Get build backend with fallback behaviour
     # https://pip.pypa.io/en/stable/reference/build-system/pyproject-toml/#fallback-behaviour
-    build_backend: str
+    build_backend = ""
     try:
         build_backend = pyproject["build-system"]["build-backend"]  # pyright: ignore[reportUnknownVariableType]
     except KeyError:
@@ -104,7 +101,7 @@ def main():
         if returncode != 0:
             sys.exit(returncode)
 
-        build_results: list[str] = []
+        build_results = []
         for child in dist.iterdir():
             build_results.append(child.name)
 

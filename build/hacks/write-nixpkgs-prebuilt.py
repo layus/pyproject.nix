@@ -26,7 +26,7 @@ class ArgsNS(argparse.Namespace):
         super().__init__()
 
 
-def write_nix_support(input: Path, output: Path):
+def write_nix_support(input, output):
     """Write nix-support, skipping propagated inputs"""
 
     files = [file for file in input.glob("*") if file.name != "propagated-build-inputs"]
@@ -38,7 +38,7 @@ def write_nix_support(input: Path, output: Path):
         output.joinpath(input_file.name).symlink_to(input_file)
 
 
-def write_bin(store_dir: str, input: Path, output: Path):
+def write_bin(store_dir, input, output):
     """Write bin while undoing shell script wrappers"""
     output.mkdir()
 

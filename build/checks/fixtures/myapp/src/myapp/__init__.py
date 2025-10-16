@@ -1,2 +1,2 @@
-def hello() -> None:
+def hello():
     print("Hello from myapp!")

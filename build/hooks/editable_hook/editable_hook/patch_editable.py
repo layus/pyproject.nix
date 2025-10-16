@@ -1,7 +1,6 @@
 import os.path
 import re
 from dataclasses import dataclass
-from typing import Callable
 
 import libcst as cst
 from libcst import (
@@ -23,7 +22,7 @@ class PatchResult:
     patched: bool
 
 
-def make_call(str_repr: str):
+def make_call(str_repr):
     return Call(
         func=Attribute(
             Attribute(
@@ -44,18 +43,15 @@ def make_call(str_repr: str):
 
 
 class RewriteStrings(CSTTransformer):
-    build_dir: str
-    replacement: str
-
     # Indicate whether file was patched or not
-    patched: bool = False
+    patched = False
 
-    def __init__(self, build_dir: str, replacement: str):
+    def __init__(self, build_dir, replacement):
         self.build_dir = build_dir
         self.replacement = replacement
         super().__init__()
 
-    def leave_SimpleString(self, original_node: SimpleString, updated_node: SimpleString):
+    def leave_SimpleString(self, original_node, updated_node):
         if original_node.raw_value.startswith(self.build_dir):
             m = re.match(r"[^'\"]*['\"]+", original_node.value)
             if m:
@@ -66,9 +62,9 @@ class RewriteStrings(CSTTransformer):
 
 
 def patch_py(
-    build_dir: str,
-    replacement: str,
-    code: str,
+    build_dir,
+    replacement,
+    code,
 ):
     tree = cst.parse_module(code)
 
@@ -79,11 +75,11 @@ def patch_py(
 
 
 def patch_pth(
-    build_dir: str,
-    replacement: str,
-    code: str,
+    build_dir,
+    replacement,
+    code,
 ):
-    lines: list[str] = []
+    lines = []
     patched = False
 
     for line in code.splitlines():
@@ -106,7 +102,7 @@ def patch_pth(
     return PatchResult("\n".join(lines) + "\n", patched)
 
 
-def fixup(patcher: Callable[..., PatchResult], build_dir: str, replacement: str, path: str):
+def fixup(patcher, build_dir, replacement, path):
     with open(path) as fp:
         code = fp.read()
 
