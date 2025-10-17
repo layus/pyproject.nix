@@ -82,9 +82,9 @@ def main():
         proc = subprocess.Popen(args.python, stdin=subprocess.PIPE)
 
         try:
-            backend_module, backend_attr = cast(str, build_backend).split(":", 1)
+            backend_module, backend_attr = str(build_backend).split(":", 1)
         except ValueError:
-            backend_module = cast(str, build_backend)
+            backend_module = str(build_backend)
             backend_attr = ""
 
         proc.communicate(
