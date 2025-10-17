@@ -72,6 +72,9 @@ def compare_paths(paths):
                 return True
 
 
+def is_relative_to(path, other):
+    return path == other or other in path.parents
+
 def is_bytecode(path):
     # Bytecode files contain fully resolved file names, meaning that the byte code will always collide
     # even if the original sources are identical.
@@ -133,8 +136,8 @@ def merge_inputs(
 
         elif all(S_ISLNK(lstat(input).st_mode) for input in inputs):  # All symlinks
             # If every symlink resolves to the same path use it as the source
-            fst = inputs[0].readlink()
-            if all(input.readlink() == fst for input in inputs[1:]):
+            fst = os.readlink(str(inputs[0]))
+            if all(os.readlink(str(input)) == fst for input in inputs[1:]):
                 return inputs[0]
 
             # Otherwise check if any of the paths resolve and try again.
@@ -219,11 +222,11 @@ def write_venv_deps(
             src = inputs
 
             # If the merged input is in the output already this write is a no-op
-            if src.is_relative_to(out_root):
+            if is_relative_to(src, out_root):
                 return
 
             # If we're writing to bin use a writer that rewrites shebangs
-            if dst.is_relative_to(out_bin):
+            if is_relative_to(dst, out_bin):
                 write_bin(python_bin, out_bin, src, dst)
                 return
 
@@ -290,8 +293,8 @@ def wrap_python(python_root, out_root):
         if not S_ISLNK(st_mode):
             continue
 
-        target = bin.readlink()
-        if target.is_relative_to(python_root):
+        target = Path(os.readlink(str(bin)))
+        if is_relative_to(target, python_root):
             bin.unlink()
             wrap_python_bin(bin, target)
 
