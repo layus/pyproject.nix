@@ -19,9 +19,6 @@ arg_parser.add_argument("--base", help="Derivation output to use as structure te
 arg_parser.add_argument("--out", required=True)
 
 
-DirectoryStructure = Union[None, dict[str, "DirectoryStructure"]]
-
-
 SKIP_PATTERNS = (
     ("nix-support",),
     (
